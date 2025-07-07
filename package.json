@@ -1,0 +1,16 @@
+{
+  "name": "toy_card",
+  "version": "1.0.0",
+  "description": "",
+  "main": "card.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
