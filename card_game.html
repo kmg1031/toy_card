@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    canvas {
+      border: 2px solid black;
+      background-color: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<script type="module">
+import { CardList } from './card_list.js';
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let cards = [];
+let dragTarget = null;
+let offsetX = 0, offsetY = 0;
+let hoverTarget = null;
+let spawnCount = 0;
+
+function createCard(type, x, y) {
+  const base = CardList[type];
+  const id = `${type}-${Date.now()}`;
+  cards.push({ id, type, name: base.name, x, y, w: 100, h: 140, color: base.color });
+  drawAll();
+}
+
+function drawCard(card) {
+  ctx.fillStyle = card.color;
+  ctx.fillRect(card.x, card.y, card.w, card.h);
+  ctx.strokeStyle = (hoverTarget && hoverTarget.id === card.id) ? 'red' : 'black';
+  ctx.lineWidth = (hoverTarget && hoverTarget.id === card.id) ? 4 : 1;
+  ctx.strokeRect(card.x, card.y, card.w, card.h);
+  ctx.fillStyle = '#000';
+  ctx.font = '14px sans-serif';
+  ctx.fillText(card.name, card.x + 10, card.y + 20);
+}
+
+function drawAll() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  cards.forEach(drawCard);
+}
+
+function getCardAt(x, y) {
+  return cards.slice().reverse().find(c => x >= c.x && x <= c.x + c.w && y >= c.y && y <= c.y + c.h);
+}
+
+function checkInteraction(source, target) {
+  if (!source || !target || source === target) return false;
+
+  const sourceData = CardList[source.type];
+  const interaction = sourceData.interaction?.[target.type];
+
+  if (!interaction || typeof interaction.run !== 'function') return false;
+
+  interaction.run({
+    moveCard: ({ source, target }) => {
+      source.x = target.x + target.w + 10;
+      source.y = target.y;
+    },
+    createCard,
+    canvas,
+    source,
+    target,
+    CardList,
+    alert,
+    spawnCount: () => spawnCount++,
+    getSpawnPos: () => ({
+      x: 20 + (spawnCount * 30),
+      y: canvas.height - 160
+    }),
+    interactionEnd: CardList.base?.interactionEnd
+  });
+
+  return true;
+}
+
+canvas.addEventListener('mousedown', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const card = getCardAt(x, y);
+  if (card) {
+    dragTarget = card;
+    offsetX = x - card.x;
+    offsetY = y - card.y;
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  if (dragTarget) {
+    dragTarget.x = x - offsetX;
+    dragTarget.y = y - offsetY;
+    hoverTarget = getCardAt(x, y);
+    if (hoverTarget === dragTarget) hoverTarget = null;
+    drawAll();
+  }
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (dragTarget) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const droppedOn = getCardAt(x, y);
+
+    const interacted = checkInteraction(dragTarget, droppedOn);
+
+    if (!interacted) {
+      dragTarget.x = x - offsetX;
+      dragTarget.y = y - offsetY;
+    }
+  }
+  dragTarget = null;
+  hoverTarget = null;
+  drawAll();
+});
+
+function init() {
+  createCard('player', 50, 50);
+  createCard('wood', 200, 50);
+  createCard('stone', 350, 50);
+  createCard('road', 500, 50);
+}
+
+init();
+</script>
+</body>
+</html>
