@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hearthstone Clone</title>
+  <style>
+    .player { margin-bottom: 1em; }
+    .board span { margin-right: 4px; }
+    .hand button { margin-right: 4px; }
+  </style>
+</head>
+<body>
+<div id="game"></div>
+<button id="endTurn">End Turn</button>
+<script type="module">
+import { initPlayer, gainMana, takeDamage } from './src/player.js';
+import { createCard, drawCard, playCard } from './src/card_system.js';
+import { GameEngine } from './src/game_engine.js';
+import { renderBoard, bindEvents, showWinner } from './src/ui_system.js';
+
+const gameEl = document.getElementById('game');
+const endTurnBtn = document.getElementById('endTurn');
+
+const deck = [
+  { id:'c001', name:'Soldier', cost:1, attack:1, health:1, type:'minion' },
+  { id:'c002', name:'Brute', cost:2, attack:2, health:2, type:'minion' }
+];
+
+const p1 = initPlayer('Player1', deck.slice());
+const p2 = initPlayer('AI', deck.slice());
+
+const engine = new GameEngine([p1, p2]);
+engine.startGame();
+
+for(let i=0;i<3;i++){ drawCard(p1); drawCard(p2); }
+
+function update() {
+  renderBoard(gameEl, [p1, p2]);
+}
+
+bindEvents(gameEl, (owner, cardId) => {
+  const player = owner === p1.name ? p1 : p2;
+  const card = playCard(player, cardId);
+  if (card) { /* for demo just summon */ }
+  update();
+});
+
+endTurnBtn.addEventListener('click', () => {
+  engine.endTurn();
+  const winner = engine.checkWinner();
+  update();
+  if (winner) showWinner(winner);
+});
+
+update();
+</script>
+</body>
+</html>
